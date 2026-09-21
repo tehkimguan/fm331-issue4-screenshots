@@ -1,0 +1,36 @@
+name: decode screenshots
+
+on:
+  push:
+    paths:
+      - "*.b64"
+      - ".github/workflows/decode-screenshots.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode base64 screenshots to PNG
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          decoded=0
+          for f in *.b64; do
+            out="${f%.b64}"
+            base64 -d "$f" > "$out"
+            decoded=$((decoded+1))
+            echo "decoded $f -> $out ($(wc -c < "$out") bytes)"
+          done
+          git config user.name "KG"
+          git config user.email "kimguan.teh@outlook.com"
+          git add *.png
+          if git diff --staged --quiet; then
+            echo "no png changes"
+          else
+            git commit -m "Decode ${decoded} screenshot PNG files"
+            git push
+          fi
